@@ -1,115 +1,111 @@
-## Laravel Redis Stream
+# Laravel Redis Stream
 
-This package using to manage the Redis stream messages listener by firing handler classes based on the defined channels. in this package, you could assign multiple
-classes to the same channel.
+Manage Redis stream messages by firing handler classes per channel. You can assign multiple handler classes to the same channel.
 
-### Installation 
+## Requirements
 
-Require this package with composer using the following command:
+- PHP ^7.4 | ^8.0
+- Laravel / Lumen ^8.0 | ^9.0 | ^10.0 | ^11.0 | ^12.0
+- Redis (phpredis driver recommended)
+
+## Installation
+
+Install the package via Composer:
 
 ```bash
-composer require dweik/laravel-redis-stream
+composer require ostah/laravel-redis-stream
 ```
 
-___
-#### Laravel
-Then you need to publish the config files by executing the following command
+### Laravel
+
+Publish the config file:
+
 ```bash
 php artisan vendor:publish --tag=laravel-redis-stream-config
 ```
 
-___
-#### lumen
-You need to add the follow line on `bootstrap/app.php` file:
+### Lumen
+
+1. Register the service provider in `bootstrap/app.php`:
+
 ```php
 $app->register(LaravelStream\Redis\StreamServiceProvider::class);
 ```
-and make sure that you loaded ***Redis*** by add the follow line _(if exists no need to add)_
+
+2. Ensure Redis is registered (add if not already present):
+
 ```php
 $app->register(Illuminate\Redis\RedisServiceProvider::class);
 ```
-_**NOTE** if you need more information to how setup redis on lumen you can check the official website by a [click here](https://lumen.laravel.com/docs/master/cache)_   
 
-Then you need to copy the streaming config file from `vendor/dweik/laravel-redis-stream/config/streaming.php` to
-`config/streaming.php`  
-___
+3. Copy the config file from `vendor/ostah/laravel-redis-stream/config/streaming.php` to `config/streaming.php`.
 
-On `config/streaming.php` file, you need to set up the Redis connection under the **redis** key.
-then you need to define the names of the channels by assigning handler classes as below example:
-- note: *We prefer use **phpredis** driver*.
+> For more on Redis with Lumen, see the [Lumen cache documentation](https://lumen.laravel.com/docs/cache).
+
+## Configuration
+
+In `config/streaming.php`:
+
+1. **Redis connection** – Set the connection name under the `redis.connection` key. This must match a connection defined in `config/database.php` (e.g. `default` or a custom `stream` connection).
+
+2. **Channels and handlers** – Define channels and their handler classes:
 
 ```php
-    'channels' => [
-        'channel-name' => [
-            App\Channels\SomeClassChannel::class
-        ],
+'channels' => [
+    'channel-name' => [
+        App\Channels\SomeClassChannel::class,
     ],
+],
 ```
 
-Also, you could define the trimming value for each channel under **trim** key.
-Ex.,
+3. **Trim (optional)** – Limit stream length per channel:
+
 ```php
-    'trim' => [
-        'channel-name' => 1000, // it means keep 1000 messages at most
-    ],
+'trim' => [
+    'channel-name' => 1000, // keep at most 1000 messages
+],
 ```
-___
 
-### Creating handler class
+We recommend using the **phpredis** driver for Redis.
 
-Use `artisan` command to make a new *handler class* by using the `make:channel-listener` function.
-then you can find it on the `app/Channels` path
+## Creating a handler class
+
+Generate a channel listener with Artisan (created in `app/Channels`):
 
 ```bash
-    php artisan make:channel-listener SomeClassChannel
+php artisan make:channel-listener SomeClassChannel
 ```
 
-### Run channel listener
+## Running the channel listener
 
-To run *channel listener* for all channels use the following command
+Listen to all channels:
+
 ```bash
-    php artisan stream:run
+php artisan stream:run
 ```
 
-To run a specific channel you could pass to the `--channel` option the channel name like :_
+Listen to a specific channel:
+
 ```bash
-    php artisan stream:run --channel=channel-name
+php artisan stream:run --channel=channel-name
 ```
 
-### Send a message to Redis stream
+## Sending messages to a Redis stream
 
-There is a facade class that could handle the `xADD` command on redis
+Use the `Stream` facade to publish messages (xADD):
 
-```php 
+```php
 use LaravelStream\Redis\Facades\Stream;
 
-class SomeClass {
-
-    public function(){
-    
-        /*
-        .
-        . some code
-        .        
-        */
-        
-        
-        /**
-        *
-        * @var string  $channel   channel name
-        * @var mixed   $data      the message data
-        * @var integer $trim      (default null) the channel messages size,
-        *                         when using (null) value, this package will use 
-        *                         the defined value on the config file "config/streaming.php".
-        *                         when using (zero) value that means stop trimming function
-        */
-        
-        $messageID = Stream::stream( $channel, $data, $trim);
-        
-        
-    
-    }
-
-}
-
+$messageId = Stream::stream($channel, $data, $trim);
 ```
+
+| Parameter  | Type    | Description |
+|-----------|---------|-------------|
+| `$channel` | string  | Channel name |
+| `$data`    | mixed   | Message payload (will be JSON- or msgpack-encoded per config) |
+| `$trim`    | int\|null | Max stream length for this channel. `null` = use config; `0` = no trimming |
+
+## License
+
+MIT
