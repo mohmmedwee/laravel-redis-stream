@@ -5,7 +5,6 @@ namespace LaravelStream\Redis\Helpers;
 
 
 use Illuminate\Redis\Connections\Connection;
-use Illuminate\Redis\RedisManager;
 
 class StreamHelper
 {
@@ -49,12 +48,8 @@ class StreamHelper
 
     public function getRedis(): Connection
     {
-        $config = config('database.redis');
         $connectionName = config('streaming.redis.connection');
-        $driveName = config('streaming.redis.drive', 'phpredis');
-       
-        $redisManager = new  RedisManager(app(), $driveName, $config);
 
-        return $redisManager->connection($connectionName);
+        return app('redis')->connection($connectionName);
     }
 }
