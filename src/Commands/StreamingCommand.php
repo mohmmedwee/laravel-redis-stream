@@ -175,8 +175,13 @@ class StreamingCommand extends Command
         $prefix = preg_quote($prefix);
         return preg_replace('/^' . $prefix . '/', '', $channelName);
     }
-
     public function getRedis(): Connection
+    {
+        $connectionName = config('streaming.redis.connection');
+
+        return app('redis')->connection($connectionName);
+    }
+    public function getoldRedis(): Connection
     {
         $config = config('database.redis');
         $connectionName = config('streaming.redis.connection');
